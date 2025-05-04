@@ -5,8 +5,8 @@ const { users } = require('@/db/schema');
 
 
 export async function main() {
-    const username = 'admin';
-    const plainPassword = 'admin';
+    const username = 'admin1';
+    const plainPassword = 'admin1';
 
     const hashedPassword = await bcrypt.hash(plainPassword, 10);
 

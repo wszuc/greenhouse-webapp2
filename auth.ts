@@ -1,4 +1,3 @@
-
 import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
 import Credentials from 'next-auth/providers/credentials';
@@ -33,12 +32,20 @@ export const { auth, signIn, signOut } = NextAuth({
                     const user = await getUser(email);
                     if (!user) return null;
                     const passwordMatch = await bcrypt.compare(password, user.password);
-                    if (passwordMatch) return user;
+                    if (passwordMatch) {
+                        return {
+                            email: user.username
+                        };
+                    }
                 }
                 console.log("Invalid credentials");
                 return null;
 
-            }
+            },
+            async session({ session, token }) {
+                session.user = token.user;
+                return session;
+            },
         },
         ),
     ],
