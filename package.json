@@ -8,13 +8,15 @@
     "start": "next start",
     "lint": "next lint",
     "generate-migrations": "npx drizzle-kit generate",
-    "execute-migrations": "npx drizzle-kit push"
+    "execute-migrations": "npx drizzle-kit push",
+    "fetch-from-rbp": "npx tsx scripts/fetch_from_raspberry.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
+    "dayjs": "^1.11.13",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
     "next": "15.3.1",
