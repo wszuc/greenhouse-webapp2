@@ -9,7 +9,8 @@
     "lint": "next lint",
     "generate-migrations": "npx drizzle-kit generate",
     "execute-migrations": "npx drizzle-kit push",
-    "fetch-from-rbp": "npx tsx scripts/fetch_from_raspberry.ts"
+    "fetch-from-rbp": "npx tsx scripts/fetch_from_raspberry.ts",
+    "cron": "npx tsx server/cron-server.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -21,6 +22,7 @@
     "drizzle-orm": "^0.43.1",
     "next": "15.3.1",
     "next-auth": "5.0.0-beta.27",
+    "node-cron": "^4.2.1",
     "pg": "^8.15.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -31,6 +33,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.17.32",
+    "@types/node-cron": "^3.0.11",
     "@types/pg": "^8.11.14",
     "@types/react": "^19",
     "@types/react-dom": "^19",

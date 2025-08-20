@@ -22,10 +22,10 @@ interface SensorReading {
 }
 
 async function fetchSensorData(): Promise<SensorReading[]> {
-    const res = await fetch('http://192.168.1.46:8000/sensors/all?limit=50');
+    const res = await fetch('http://192.168.1.46:8000/synchronize-data');
     if (!res.ok) throw new Error(`Failed to fetch data: ${res.statusText}`);
     const json = await res.json();
-    console.log(json);
+    console.log('📡 Received data from Pi:', json);
     return json.map((entry: any) => ({
         temperature: entry.temp_1,
         temperature2: entry.temp_2 || entry.temp_1, // Fallback to temp_1 if temp_2 not available
@@ -53,16 +53,29 @@ async function insertReadings(readingsData: SensorReading[]) {
     console.log(`[✓] Inserted ${readingsData.length} readings.`);
 }
 
-async function main() {
+export async function syncFromRaspberryPi() {
     try {
         await client.connect();
         const data = await fetchSensorData();
         await insertReadings(data);
     } catch (err) {
         console.error('[!] Error:', err);
+        throw err; // Re-throw so cron server can handle it
     } finally {
         await client.end();
     }
 }
 
-main();
+// Keep the original main function for standalone execution
+async function main() {
+    try {
+        await syncFromRaspberryPi();
+    } catch (err) {
+        console.error('[!] Error:', err);
+    }
+}
+
+// Only run main if this file is executed directly
+if (require.main === module) {
+    main();
+}
