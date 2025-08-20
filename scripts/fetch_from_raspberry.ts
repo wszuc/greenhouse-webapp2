@@ -13,7 +13,10 @@ const db = drizzle(client);
 
 interface SensorReading {
     temperature: number;
+    temperature2: number;
+    temperature3: number;
     humidity: number;
+    soilHumidity: number;
     light: number;
     timestamp: string; // ISO 8601
 }
@@ -25,7 +28,10 @@ async function fetchSensorData(): Promise<SensorReading[]> {
     console.log(json);
     return json.map((entry: any) => ({
         temperature: entry.temp_1,
+        temperature2: entry.temp_2 || entry.temp_1, // Fallback to temp_1 if temp_2 not available
+        temperature3: entry.temp_3 || entry.temp_1, // Fallback to temp_1 if temp_3 not available
         humidity: entry.humidity,
+        soilHumidity: entry.soil_humidity || entry.humidity, // Fallback to air humidity if soil not available
         light: entry.lighting,
         timestamp: entry.date,
     }));
@@ -36,7 +42,10 @@ async function insertReadings(readingsData: SensorReading[]) {
         await db.insert(readings).values({
             ownerId: OWNER_ID,
             temperature: reading.temperature,
+            temperature2: reading.temperature2,
+            temperature3: reading.temperature3,
             humidity: reading.humidity,
+            soilHumidity: reading.soilHumidity,
             light: reading.light,
             createdAt: dayjs(reading.timestamp).toDate()
         });
