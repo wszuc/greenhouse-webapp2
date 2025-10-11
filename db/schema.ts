@@ -17,3 +17,10 @@ export const readings = pgTable('readings', {
     light: doublePrecision('light').notNull(),
     createdAt: timestamp('created_at', { withTimezone: false }).defaultNow().notNull(),
 });
+
+export const events = pgTable('events', {
+    id: serial('id').primaryKey(),
+    uid: varchar('uid', { length: 50 }).notNull(),
+    info: text('info').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: false }).defaultNow().notNull(),
+});

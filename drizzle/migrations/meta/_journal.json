@@ -22,6 +22,13 @@
       "when": 1755710968599,
       "tag": "0002_lonely_korg",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1760200819162,
+      "tag": "0003_numerous_doctor_spectrum",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,8 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Client } from 'pg';
-import { readings } from '@/db/schema';
+import { readings, events } from '@/db/schema';
 import dayjs from 'dayjs';
-import { eq } from 'drizzle-orm';
 
 const DATABASE_URL = process.env.DATABASE_URL!;
 const OWNER_ID = 1;
@@ -21,52 +20,84 @@ interface SensorReading {
     timestamp: string; // ISO 8601
 }
 
-async function fetchSensorData(): Promise<SensorReading[]> {
-    const res = await fetch('http://192.168.1.46:8000/synchronize-data');
+interface EventEntry {
+    info: string;
+    date: string;
+    uid?: string;
+}
+
+async function fetchSensorData(): Promise<{ readings: SensorReading[]; events: EventEntry[] }> {
+    const res = await fetch('http://192.168.1.16:8000/synchronize-data');
     if (!res.ok) throw new Error(`Failed to fetch data: ${res.statusText}`);
     const json = await res.json();
-    console.log('Received data from Pi:', json);
-    return json.map((entry: any) => ({
+    console.log("json: ", json);
+
+    const readingsJson = json.conditions || [];
+    const eventsJson = json.events || [];
+    console.log("Readings JSON: ", readingsJson);
+    const readingsData: SensorReading[] = readingsJson.map((entry: any) => ({
         temperature: entry.temp_1,
-        temperature2: entry.temp_2 || entry.temp_1, // Fallback to temp_1 if temp_2 not available
-        temperature3: entry.temp_3 || entry.temp_1, // Fallback to temp_1 if temp_3 not available
+        temperature2: entry.temp_2 || entry.temp_1,
+        temperature3: entry.temp_3 || entry.temp_1,
         humidity: entry.humidity,
-        soilHumidity: entry.soil_humidity || entry.humidity, // Fallback to air humidity if soil not available
+        soilHumidity: entry.soil_humidity || entry.humidity,
         light: entry.lighting,
         timestamp: entry.date,
     }));
+
+    const eventsData: EventEntry[] = eventsJson.map((entry: any) => ({
+        info: entry.info,
+        uid: entry.uid,
+        date: entry.date,
+    }));
+
+    return { readings: readingsData, events: eventsData };
 }
 
+
 async function insertReadings(readingsData: SensorReading[]) {
-    for (const reading of readingsData) {
-        await db.insert(readings).values({
+    if (!readingsData.length) return;
+    await db.insert(readings).values(
+        readingsData.map(r => ({
             ownerId: OWNER_ID,
-            temperature: reading.temperature,
-            temperature2: reading.temperature2,
-            temperature3: reading.temperature3,
-            humidity: reading.humidity,
-            soilHumidity: reading.soilHumidity,
-            light: reading.light,
-            createdAt: dayjs(reading.timestamp).toDate()
-        });
-    }
+            temperature: r.temperature,
+            temperature2: r.temperature2,
+            temperature3: r.temperature3,
+            humidity: r.humidity,
+            soilHumidity: r.soilHumidity,
+            light: r.light,
+            createdAt: dayjs(r.timestamp).toDate()
+        }))
+    );
     console.log(`Inserted ${readingsData.length} readings.`);
+}
+
+async function insertEvents(eventsData: EventEntry[]) {
+    if (!eventsData.length) return;
+    await db.insert(events).values(
+        eventsData.map(e => ({
+            info: e.info,
+            uid: e.uid || 'raspberry',
+            createdAt: dayjs(e.date).toDate()
+        }))
+    );
+    console.log(`Inserted ${eventsData.length} events.`);
 }
 
 export async function syncFromRaspberryPi() {
     try {
         await client.connect();
-        const data = await fetchSensorData();
-        await insertReadings(data);
+        const { readings: readingsData, events: eventsData } = await fetchSensorData();
+        await insertReadings(readingsData);
+        await insertEvents(eventsData);
     } catch (err) {
         console.error('[!] Error:', err);
-        throw err; // Re-throw so cron server can handle it
+        throw err;
     } finally {
         await client.end();
     }
 }
 
-// Keep the original main function for standalone execution
 async function main() {
     try {
         await syncFromRaspberryPi();
@@ -75,7 +106,6 @@ async function main() {
     }
 }
 
-// Only run main if this file is executed directly
 if (require.main === module) {
     main();
 }
