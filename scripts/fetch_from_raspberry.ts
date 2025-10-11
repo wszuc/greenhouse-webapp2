@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import { eq } from 'drizzle-orm';
 
 const DATABASE_URL = process.env.DATABASE_URL!;
-const OWNER_ID = 1; // Zakładam, że znasz ID użytkownika – ustaw go tu.
+const OWNER_ID = 1;
 
 const client = new Client({ connectionString: DATABASE_URL });
 const db = drizzle(client);
@@ -25,7 +25,7 @@ async function fetchSensorData(): Promise<SensorReading[]> {
     const res = await fetch('http://192.168.1.46:8000/synchronize-data');
     if (!res.ok) throw new Error(`Failed to fetch data: ${res.statusText}`);
     const json = await res.json();
-    console.log('📡 Received data from Pi:', json);
+    console.log('Received data from Pi:', json);
     return json.map((entry: any) => ({
         temperature: entry.temp_1,
         temperature2: entry.temp_2 || entry.temp_1, // Fallback to temp_1 if temp_2 not available
@@ -50,7 +50,7 @@ async function insertReadings(readingsData: SensorReading[]) {
             createdAt: dayjs(reading.timestamp).toDate()
         });
     }
-    console.log(`[✓] Inserted ${readingsData.length} readings.`);
+    console.log(`Inserted ${readingsData.length} readings.`);
 }
 
 export async function syncFromRaspberryPi() {
