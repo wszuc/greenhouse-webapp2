@@ -1,14 +1,9 @@
 import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Client } from 'pg';
-import { readings, events } from '@/db/schema';
 import dayjs from 'dayjs';
+import { db } from '@/db'; // importujemy gotowy db z pool i schema
+import { readings, events } from '@/db/schema';
 
-const DATABASE_URL = process.env.DATABASE_URL!;
 const OWNER_ID = 1;
-
-const client = new Client({ connectionString: DATABASE_URL });
-const db = drizzle(client);
 
 interface SensorReading {
     temperature: number;
@@ -30,11 +25,10 @@ async function fetchSensorData(): Promise<{ readings: SensorReading[]; events: E
     const res = await fetch('http://192.168.1.16:8000/synchronize-data');
     if (!res.ok) throw new Error(`Failed to fetch data: ${res.statusText}`);
     const json = await res.json();
-    console.log("json: ", json);
 
     const readingsJson = json.conditions || [];
     const eventsJson = json.events || [];
-    console.log("Readings JSON: ", readingsJson);
+
     const readingsData: SensorReading[] = readingsJson.map((entry: any) => ({
         temperature: entry.temp_1,
         temperature2: entry.temp_2 || entry.temp_1,
@@ -54,7 +48,6 @@ async function fetchSensorData(): Promise<{ readings: SensorReading[]; events: E
     return { readings: readingsData, events: eventsData };
 }
 
-
 async function insertReadings(readingsData: SensorReading[]) {
     if (!readingsData.length) return;
     await db.insert(readings).values(
@@ -69,7 +62,6 @@ async function insertReadings(readingsData: SensorReading[]) {
             createdAt: dayjs(r.timestamp).toDate()
         }))
     );
-    console.log(`Inserted ${readingsData.length} readings.`);
 }
 
 async function insertEvents(eventsData: EventEntry[]) {
@@ -81,31 +73,10 @@ async function insertEvents(eventsData: EventEntry[]) {
             createdAt: dayjs(e.date).toDate()
         }))
     );
-    console.log(`Inserted ${eventsData.length} events.`);
 }
 
 export async function syncFromRaspberryPi() {
-    try {
-        await client.connect();
-        const { readings: readingsData, events: eventsData } = await fetchSensorData();
-        await insertReadings(readingsData);
-        await insertEvents(eventsData);
-    } catch (err) {
-        console.error('[!] Error:', err);
-        throw err;
-    } finally {
-        await client.end();
-    }
-}
-
-async function main() {
-    try {
-        await syncFromRaspberryPi();
-    } catch (err) {
-        console.error('[!] Error:', err);
-    }
-}
-
-if (require.main === module) {
-    main();
+    const { readings: readingsData, events: eventsData } = await fetchSensorData();
+    await insertReadings(readingsData);
+    await insertEvents(eventsData);
 }
